@@ -2,4 +2,5 @@
 .idea
 dist
 kodic.log
+kodic.db
 __debug_bin

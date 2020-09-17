@@ -12,9 +12,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/asdine/storm"
 	"github.com/atotto/clipboard"
 	"github.com/gen2brain/beeep"
 )
+
+// Memory searched word
+type Memory struct {
+	ID        int    `storm:"id,increment"` // primary key
+	English   string `storm:"unique"`       // this field will be indexed with a unique constraint
+	Means     string
+	CreatedAt time.Time `storm:"index"` // this field will be indexed
+	Memorized bool
+}
 
 // Mean holds word mean
 type Mean struct {
@@ -65,6 +75,8 @@ var (
 	equalRegExp   *regexp.Regexp
 	biArrowRegExp *regexp.Regexp
 	abbrRegExp    *regexp.Regexp
+
+	DB *storm.DB
 )
 
 func init() {
@@ -76,23 +88,23 @@ func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
-func validateWord(word string) string {
-	word = strings.Trim(word, " ")
+func validateInput(input string) *string {
+	word := strings.Trim(input, " ")
 	if word == previousWord {
-		return ""
+		return nil
 	}
 	previousWord = word
 
 	if !wordRegExp.MatchString(word) {
 		log.Println("wrong word: " + word)
-		return ""
+		return nil
 	}
-
-	return word
+	word = strings.ToLower(word)
+	return &word
 }
 
-func searchWord(word string) []byte {
-	searchURL := fmt.Sprintf(rootURL+"search?m=\"pc\"&query=\"%s\"", word)
+func askWord(word *string) []byte {
+	searchURL := fmt.Sprintf(rootURL+"search?m=\"pc\"&query=\"%s\"", *word)
 	resp, err := http.Get(searchURL)
 	if err != nil {
 		log.Println("HTTP request error: " + err.Error())
@@ -124,10 +136,40 @@ func parseResponse(body []byte) *DictResponse {
 	return &dictResponse
 }
 
-func sendNotification(word string, dictResponse *DictResponse) {
+func saveWord2DB(word, means *string) {
+	memory := Memory{
+		English:   *word,
+		Means:     *means,
+		CreatedAt: time.Now(),
+		Memorized: false,
+	}
+
+	err := DB.Save(&memory)
+	if err != nil {
+		log.Println("failed to save word: " + err.Error())
+		return
+	}
+	log.Println("saved: " + *word)
+}
+
+func getMeansFromDB(word *string) *string {
+	var memory Memory
+
+	err := DB.One("English", *word, &memory)
+	if err == storm.ErrNotFound {
+		return nil
+	} else if err != nil {
+		log.Println("failed to search word: " + *word)
+		return nil
+	}
+
+	return &memory.Means
+}
+
+func makeMeans(dictResponse *DictResponse) *string {
 	means := dictResponse.SearchResultMap.SearchResultListMap.Word.Items[0].MeansCollectors[0].Means
 
-	var text string
+	text := ""
 	index := 1
 	for _, mean := range means {
 		newText := mean.Value
@@ -143,37 +185,55 @@ func sendNotification(word string, dictResponse *DictResponse) {
 		}
 	}
 
-	beeep.Notify(word, text, "./icon.jpg")
+	return &text
+}
+
+func sendNotification(word, means *string) {
+	beeep.Notify(*word, *means, "./icon.jpg")
 }
 
 func run() {
 	defer time.Sleep(interval)
 
-	word, err := clipboard.ReadAll()
+	input, err := clipboard.ReadAll()
 	if err != nil {
 		log.Println("cannot read clipboard : " + err.Error())
 		return
 	}
 
-	word = validateWord(word)
-	if word == "" {
+	word := validateInput(input)
+	if word == nil {
 		return
 	}
 
-	body := searchWord(word)
-	if body == nil {
-		return
+	means := getMeansFromDB(word)
+	if means == nil {
+		body := askWord(word)
+		if body == nil {
+			return
+		}
+
+		dictResponse := parseResponse(body)
+		if dictResponse == nil {
+			return
+		}
+
+		means = makeMeans(dictResponse)
+
+		saveWord2DB(word, means)
 	}
 
-	dictResponse := parseResponse(body)
-	if dictResponse == nil {
-		return
-	}
-
-	sendNotification(word, dictResponse)
+	sendNotification(word, means)
 }
 
 func main() {
+	db, err := storm.Open("kodic.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	DB = db
+	defer DB.Close()
+
 	previousWord = ""
 	wordRegExp, _ = regexp.Compile(`^[a-zA-Z]+$`)
 	tagRegExp, _ = regexp.Compile(`</?span[^>]*>`)
