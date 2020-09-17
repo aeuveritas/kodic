@@ -57,13 +57,14 @@ const (
 )
 
 var (
-	previousWord string
-	wordRegExp   *regexp.Regexp
-	// tagRegExp    *regexp.Regexp
-	// strongRegExp *regexp.Regexp
+	previousWord  string
+	wordRegExp    *regexp.Regexp
+	tagRegExp     *regexp.Regexp
+	strongRegExp  *regexp.Regexp
 	arrowRegExp   *regexp.Regexp
 	equalRegExp   *regexp.Regexp
 	biArrowRegExp *regexp.Regexp
+	abbrRegExp    *regexp.Regexp
 )
 
 func init() {
@@ -127,17 +128,22 @@ func sendNotification(word string, dictResponse *DictResponse) {
 	means := dictResponse.SearchResultMap.SearchResultListMap.Word.Items[0].MeansCollectors[0].Means
 
 	var text string
-	for idx, mean := range means {
+	index := 1
+	for _, mean := range means {
 		newText := mean.Value
-		// newText = tagRegExp.ReplaceAllString(newText, "")
-		// newText = strongRegExp.ReplaceAllString(newText, "")
+		newText = tagRegExp.ReplaceAllString(newText, "")
+		newText = strongRegExp.ReplaceAllString(newText, "")
 		newText = arrowRegExp.ReplaceAllString(newText, "")
 		newText = equalRegExp.ReplaceAllString(newText, "")
 		newText = biArrowRegExp.ReplaceAllString(newText, "")
-		text += strconv.Itoa(idx+1) + ". " + newText + " "
+		newText = abbrRegExp.ReplaceAllString(newText, "")
+		if len(newText) != 0 {
+			text += strconv.Itoa(index) + ". " + newText + " "
+			index++
+		}
 	}
 
-	beeep.Notify("Word: "+word, "Mean: "+text, "icon.jpg")
+	beeep.Notify(word, text, "./icon.jpg")
 }
 
 func run() {
@@ -170,11 +176,12 @@ func run() {
 func main() {
 	previousWord = ""
 	wordRegExp, _ = regexp.Compile(`^[a-zA-Z]+$`)
-	// tagRegExp, _ = regexp.Compile(`</?span[^>]*>`)
-	// strongRegExp, _ = regexp.Compile(`</?strong[^>]*>`)
+	tagRegExp, _ = regexp.Compile(`</?span[^>]*>`)
+	strongRegExp, _ = regexp.Compile(`</?strong[^>]*>`)
 	arrowRegExp, _ = regexp.Compile(`\(→(.*?)\)`)
 	equalRegExp, _ = regexp.Compile(`\(=(.*?)\)`)
 	biArrowRegExp, _ = regexp.Compile(`\(↔(.*?)\)`)
+	abbrRegExp, _ = regexp.Compile(`\(Abbr.\)`)
 	for {
 		run()
 	}
