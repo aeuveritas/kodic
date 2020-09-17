@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -58,6 +59,15 @@ var (
 	previousWord string
 	regCode      *regexp.Regexp
 )
+
+func init() {
+	f, err := os.OpenFile("kodic.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Println(err)
+	}
+	log.SetOutput(f)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+}
 
 func validateWord(word string) string {
 	word = strings.Trim(word, " ")
@@ -115,7 +125,7 @@ func sendNotification(word string, dictResponse *DictResponse) {
 		text += mean.Value + " "
 	}
 
-	beeep.Notify("Word: "+word, "Mean: "+text, "./icon.jpg")
+	beeep.Notify("Word: "+word, "Mean: "+text, "icon.jpg")
 }
 
 func run() {
