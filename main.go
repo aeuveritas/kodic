@@ -61,8 +61,9 @@ var (
 	wordRegExp   *regexp.Regexp
 	// tagRegExp    *regexp.Regexp
 	// strongRegExp *regexp.Regexp
-	arrowRegExp *regexp.Regexp
-	equalRegExp *regexp.Regexp
+	arrowRegExp   *regexp.Regexp
+	equalRegExp   *regexp.Regexp
+	biArrowRegExp *regexp.Regexp
 )
 
 func init() {
@@ -132,6 +133,7 @@ func sendNotification(word string, dictResponse *DictResponse) {
 		// newText = strongRegExp.ReplaceAllString(newText, "")
 		newText = arrowRegExp.ReplaceAllString(newText, "")
 		newText = equalRegExp.ReplaceAllString(newText, "")
+		newText = biArrowRegExp.ReplaceAllString(newText, "")
 		text += strconv.Itoa(idx+1) + ". " + newText + " "
 	}
 
@@ -172,6 +174,7 @@ func main() {
 	// strongRegExp, _ = regexp.Compile(`</?strong[^>]*>`)
 	arrowRegExp, _ = regexp.Compile(`\(→(.*?)\)`)
 	equalRegExp, _ = regexp.Compile(`\(=(.*?)\)`)
+	biArrowRegExp, _ = regexp.Compile(`\(↔(.*?)\)`)
 	for {
 		run()
 	}
