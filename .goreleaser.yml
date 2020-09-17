@@ -7,11 +7,17 @@ before:
     # you may remove this if you don't need go generate
     - go generate ./...
 builds:
-  - env:
+  - id: "linux-build"
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
+  - id: "windows-build"
+    env:
+      - CGO_ENABLED=0
+    goos:
       - windows
+    ldflags: -H windowsgui
 archives:
   - replacements:
       linux: Linux
