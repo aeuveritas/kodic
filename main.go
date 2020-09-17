@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -51,13 +52,17 @@ type DictResponse struct {
 }
 
 const (
-	interval = time.Second
+	interval = 500 * time.Millisecond
 	rootURL  = "https://en.dict.naver.com/api3/enko/"
 )
 
 var (
 	previousWord string
-	regCode      *regexp.Regexp
+	wordRegExp   *regexp.Regexp
+	// tagRegExp    *regexp.Regexp
+	// strongRegExp *regexp.Regexp
+	arrowRegExp *regexp.Regexp
+	equalRegExp *regexp.Regexp
 )
 
 func init() {
@@ -76,7 +81,7 @@ func validateWord(word string) string {
 	}
 	previousWord = word
 
-	if !regCode.MatchString(word) {
+	if !wordRegExp.MatchString(word) {
 		log.Println("wrong word: " + word)
 		return ""
 	}
@@ -121,8 +126,13 @@ func sendNotification(word string, dictResponse *DictResponse) {
 	means := dictResponse.SearchResultMap.SearchResultListMap.Word.Items[0].MeansCollectors[0].Means
 
 	var text string
-	for _, mean := range means {
-		text += mean.Value + " "
+	for idx, mean := range means {
+		newText := mean.Value
+		// newText = tagRegExp.ReplaceAllString(newText, "")
+		// newText = strongRegExp.ReplaceAllString(newText, "")
+		newText = arrowRegExp.ReplaceAllString(newText, "")
+		newText = equalRegExp.ReplaceAllString(newText, "")
+		text += strconv.Itoa(idx+1) + ". " + newText + " "
 	}
 
 	beeep.Notify("Word: "+word, "Mean: "+text, "icon.jpg")
@@ -157,7 +167,11 @@ func run() {
 
 func main() {
 	previousWord = ""
-	regCode, _ = regexp.Compile("^[a-zA-Z]+$")
+	wordRegExp, _ = regexp.Compile(`^[a-zA-Z]+$`)
+	// tagRegExp, _ = regexp.Compile(`</?span[^>]*>`)
+	// strongRegExp, _ = regexp.Compile(`</?strong[^>]*>`)
+	arrowRegExp, _ = regexp.Compile(`\(→(.*?)\)`)
+	equalRegExp, _ = regexp.Compile(`\(=(.*?)\)`)
 	for {
 		run()
 	}
