@@ -189,7 +189,7 @@ func makeMeans(dictResponse *DictResponse) *string {
 }
 
 func sendNotification(word, means *string) {
-	beeep.Notify(*word, *means, "./icon.jpg")
+	beeep.Notify(*word, *means, "icon.jpg")
 }
 
 func run() {

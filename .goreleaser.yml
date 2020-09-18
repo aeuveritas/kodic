@@ -31,6 +31,8 @@ archives:
       windows: Windows
       amd64: x86_64
     format: zip
+    files:
+      - icon.jpg
 checksum:
   name_template: "checksums.txt"
 snapshot:
