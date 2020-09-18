@@ -62,7 +62,7 @@ type DictResponse struct {
 }
 
 const (
-	interval = 500 * time.Millisecond
+	interval = 300 * time.Millisecond
 	rootURL  = "https://en.dict.naver.com/api3/enko/"
 )
 
