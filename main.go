@@ -173,11 +173,11 @@ func makeMeans(dictResponse *DictResponse) *string {
 	index := 1
 	for _, mean := range means {
 		newText := mean.Value
-		newText = tagRegExp.ReplaceAllString(newText, "")
-		newText = strongRegExp.ReplaceAllString(newText, "")
 		newText = arrowRegExp.ReplaceAllString(newText, "")
 		newText = equalRegExp.ReplaceAllString(newText, "")
 		newText = biArrowRegExp.ReplaceAllString(newText, "")
+		newText = tagRegExp.ReplaceAllString(newText, "")
+		newText = strongRegExp.ReplaceAllString(newText, "")
 		newText = abbrRegExp.ReplaceAllString(newText, "")
 		if len(newText) != 0 {
 			text += strconv.Itoa(index) + ". " + newText + " "
