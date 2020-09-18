@@ -76,7 +76,7 @@ var (
 	biArrowRegExp *regexp.Regexp
 	abbrRegExp    *regexp.Regexp
 
-	DB *storm.DB
+	sDB *storm.DB
 )
 
 func init() {
@@ -146,7 +146,7 @@ func saveWord2DB(word, means *string) {
 		Memorized: false,
 	}
 
-	err := DB.Save(&memory)
+	err := sDB.Save(&memory)
 	if err != nil {
 		log.Println("failed to save word: " + err.Error())
 		return
@@ -157,7 +157,7 @@ func saveWord2DB(word, means *string) {
 func getMeansFromDB(word *string) *string {
 	var memory Memory
 
-	err := DB.One("English", *word, &memory)
+	err := sDB.One("English", *word, &memory)
 	if err == storm.ErrNotFound {
 		return nil
 	} else if err != nil {
@@ -233,8 +233,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	DB = db
-	defer DB.Close()
+	sDB = db
+	defer sDB.Close()
 
 	word := "Welcome to Kodic"
 	msg := "Please copy any words!"
