@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,6 +14,7 @@ import (
 	"github.com/asdine/storm"
 	"github.com/atotto/clipboard"
 	"github.com/gen2brain/beeep"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 // Memory searched word
@@ -80,11 +80,13 @@ var (
 )
 
 func init() {
-	f, err := os.OpenFile("kodic.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Println(err)
-	}
-	log.SetOutput(f)
+	log.SetOutput(&lumberjack.Logger{
+		Filename:   "kodic.log",
+		MaxSize:    8,
+		MaxBackups: 3,
+		MaxAge:     30,
+		Compress:   true,
+	})
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
