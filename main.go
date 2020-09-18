@@ -236,6 +236,10 @@ func main() {
 	DB = db
 	defer DB.Close()
 
+	word := "Welcome to Kodic"
+	msg := "Please copy any words!"
+	sendNotification(&word, &msg)
+
 	previousWord = ""
 	wordRegExp, _ = regexp.Compile(`^[a-zA-Z]+$`)
 	tagRegExp, _ = regexp.Compile(`</?span[^>]*>`)
